@@ -14,8 +14,10 @@
 #include <memepp/string_def.hpp>
 #include <memepp/string_view_def.hpp>
 #include <megopp/util/scope_cleanup.h>
+
 #include <string>
 #include <string_view>
+#include <algorithm>
 
 namespace mmswpp {
 
@@ -38,27 +40,25 @@ struct in04_addr
 
     in04_addr(const char* _str, mmint_t _len)
     {
-        const char* str = nullptr;
-        mgec_t ec = mgmem__cstr_alloc_if_no_end_zero(_str, _len, &str, NULL, 0);
-        if (ec) {
-            addr_.s_addr = htonl(INADDR_ANY);
-        }
-        MEGOPP_UTIL__ON_SCOPE_CLEANUP([&] { 
-            mgmem__free_if_ptr_not_equal(_str, (void*)str); });
-        
-        if (inet_aton(AF_INET, str, &addr_) != 0)
+        char buffer[INET_ADDRSTRLEN + 1];
+        strncpy(buffer, _str, (std::min)(sizeof(buffer), static_cast<size_t>(_len)));
+
+        if (inet_aton(AF_INET, buffer, &addr_) != 1)
         {
             addr_.s_addr = htonl(INADDR_ANY);
         }
     }
 
     in04_addr(const char* _str)
-        : in04_addr(_str, -1)
     {
+        if (inet_aton(AF_INET, _str, &addr_) != 1)
+        {
+            addr_.s_addr = htonl(INADDR_ANY);
+        }
     }
 
     in04_addr(const std::string& _str)
-        : in04_addr(_str.c_str(), static_cast<mmint_t>(_str.size()))
+        : in04_addr(_str.c_str())
     {
     }
 
@@ -68,7 +68,7 @@ struct in04_addr
     }
 
     in04_addr(const memepp::string& _str)
-        : in04_addr(_str.c_str(), _str.size())
+        : in04_addr(_str.c_str())
     {
     }
 
@@ -157,23 +157,21 @@ struct in06_addr
 
     in06_addr(const char* _str, mmint_t _len)
     {
-        const char* str = nullptr;
-        mgec_t ec = mgmem__cstr_alloc_if_no_end_zero(_str, _len, &str, NULL, 0);
-        if (ec) {
-            addr_ = in6addr_any;
-        }
-        MEGOPP_UTIL__ON_SCOPE_CLEANUP([&] { 
-            mgmem__free_if_ptr_not_equal(_str, (void*)str); });
-        
-        if (inet_pton(AF_INET6, str, &addr_) != 1)
+        char buffer[INET6_ADDRSTRLEN + 1];
+        strncpy(buffer, _str, (std::min)(sizeof(buffer), static_cast<size_t>(_len)));
+
+        if (inet_pton(AF_INET6, _str, &addr_) != 1)
         {
             addr_ = in6addr_any;
         }
     }
 
     in06_addr(const char* _str)
-        : in06_addr(_str, -1)
     {
+        if (inet_pton(AF_INET6, _str, &addr_) != 1)
+        {
+            addr_ = in6addr_any;
+        }
     }
 
     in06_addr(const std::string& _str)
