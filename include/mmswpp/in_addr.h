@@ -41,7 +41,8 @@ struct in04_addr
     in04_addr(const char* _str, mmint_t _len)
     {
         char buffer[INET_ADDRSTRLEN + 1];
-        strncpy(buffer, _str, (std::min)(sizeof(buffer), static_cast<size_t>(_len)));
+        strncpy(buffer, _str, (std::min)(sizeof(buffer) - 1, static_cast<size_t>(_len)));
+        buffer[sizeof(buffer) - 1] = '\0';
 
         if (inet_aton(AF_INET, buffer, &addr_) != 1)
         {
@@ -93,47 +94,76 @@ struct in04_addr
         return addr_;
     }
 
-        template <>
-        inline ::in_addr to<::in_addr>() const
+    template <>
+    inline ::in_addr to<::in_addr>() const
+    {
+        return addr_;
+    }
+
+    template <>
+    inline ::in6_addr to<::in6_addr>() const
+    {
+        auto s = to<std::string>();
+        ::in6_addr addr;
+        if (inet_pton(AF_INET6, s.c_str(), &addr) != 1)
         {
-            return addr_;
+            return ::in6_addr{};
         }
 
-        template <>
-        inline ::in6_addr to<::in6_addr>() const
+        return addr;
+    }
+
+    template <>
+    inline std::string to<std::string>() const
+    {
+        char buffer[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &addr_, buffer, INET_ADDRSTRLEN) == nullptr)
         {
-            auto s = to<std::string>();
-            ::in6_addr addr;
-            if (inet_pton(AF_INET6, s.c_str(), &addr) != 1)
-            {
-                return ::in6_addr{};
-            }
-
-            return addr;
+            return std::string{};
         }
+        return std::string{ buffer };
+    }
 
-        template <>
-        inline std::string to<std::string>() const
+    template <>
+    inline memepp::string to<memepp::string>() const
+    {
+        char buffer[INET_ADDRSTRLEN];
+        if (inet_ntop(AF_INET, &addr_, buffer, INET_ADDRSTRLEN) == nullptr)
         {
-            char buffer[INET_ADDRSTRLEN];
-            if (inet_ntop(AF_INET, &addr_, buffer, INET_ADDRSTRLEN) == nullptr)
-            {
-                return std::string{};
-            }
-            return std::string{ buffer };
+            return memepp::string{};
         }
+        return memepp::string{ buffer };
+    }
 
-        template <>
-        inline memepp::string to<memepp::string>() const
-        {
-            char buffer[INET_ADDRSTRLEN];
-            if (inet_ntop(AF_INET, &addr_, buffer, INET_ADDRSTRLEN) == nullptr)
-            {
-                return memepp::string{};
-            }
-            return memepp::string{ buffer };
-        }
+    inline static mgec_t calc_network_address(
+        const char* _addr, mmint_t _alen, const char* _mask, mmint_t _mlen, in04_addr& _out)
+    {
+        char addr[INET_ADDRSTRLEN + 1];
+        char mask[INET_ADDRSTRLEN + 1];
 
+        mmint_t alen = (_alen < 0 ? sizeof(addr) - 1 : 
+            (std::min)(sizeof(addr) - 1, static_cast<size_t>(_alen)));
+        mmint_t mlen = (_mlen < 0 ? sizeof(mask) - 1 : 
+            (std::min)(sizeof(mask) - 1, static_cast<size_t>(_mlen)));
+        
+        strncpy(addr, _addr, alen);
+        strncpy(mask, _mask, mlen);
+        addr[alen] = '\0';
+        mask[mlen] = '\0';
+
+        ::in_addr addr_in;
+        ::in_addr mask_in;
+
+        if (inet_pton(AF_INET, addr, &addr_in) != 1)
+            return MGEC__INVAL;
+        
+        if (inet_pton(AF_INET, mask, &mask_in) != 1)
+            return MGEC__INVAL;
+        
+        addr_in.s_addr &= mask_in.s_addr;
+        _out = in04_addr{ addr_in };
+        return 0;
+    }
 private:
     ::in_addr addr_;
 };
@@ -158,7 +188,8 @@ struct in06_addr
     in06_addr(const char* _str, mmint_t _len)
     {
         char buffer[INET6_ADDRSTRLEN + 1];
-        strncpy(buffer, _str, (std::min)(sizeof(buffer), static_cast<size_t>(_len)));
+        strncpy(buffer, _str, (std::min)(sizeof(buffer) - 1, static_cast<size_t>(_len)));
+        buffer[sizeof(buffer) - 1] = '\0';
 
         if (inet_pton(AF_INET6, _str, &addr_) != 1)
         {

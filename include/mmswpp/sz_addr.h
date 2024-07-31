@@ -185,6 +185,7 @@ namespace mmswpp {
                 return sz_addr_e::domain;
             }
         }
+
     private:
     
         string data_;
