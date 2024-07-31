@@ -169,7 +169,7 @@ namespace mmswpp {
 
         inline static sz_addr_e identify_type(const string& _s)
         {
-            uint8_t buf[INET6_ADDRSTRLEN] = { 0 };
+            uint8_t buf[sizeof(::in6_addr)] = { 0 };
             if (inet_pton(AF_INET, _s.data(), buf) == 1)
             {
                 return sz_addr_e::ipv4;
