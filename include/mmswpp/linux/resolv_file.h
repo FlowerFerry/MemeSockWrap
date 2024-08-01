@@ -343,9 +343,6 @@ namespace resolv {
             }
             case parameter::e_type::nameserver:
             {
-                if (p->has_own_affixes && affixes_not_empty)
-                    fprintf(_file, "##%s\n", own_prefix.data());
-
                 auto& addr = static_cast<nameserver_parameter*>(p.get())->data;
                 fprintf(_file, "nameserver %s\n", addr.to_string().data());
                 break;
