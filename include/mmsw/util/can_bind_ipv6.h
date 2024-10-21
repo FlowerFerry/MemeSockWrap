@@ -12,6 +12,10 @@
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #  pragma comment(lib, "ws2_32.lib")
+#else
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <unistd.h>
 #endif
 
 MG_CAPI_INLINE bool mmsw_util__can_bind_ipv6(uint16_t _port)
