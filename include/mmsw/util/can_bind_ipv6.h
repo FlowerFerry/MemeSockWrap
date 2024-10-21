@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #if MG_OS__WIN_AVAIL
 #  include <winsock2.h>

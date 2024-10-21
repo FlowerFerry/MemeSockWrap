@@ -135,7 +135,7 @@ struct in04_addr
         return memepp::string{ buffer };
     }
 
-    inline static mgec_t calc_network_address(
+    inline static mgec_t calc_subnet(
         const char* _addr, mmint_t _alen, const char* _mask, mmint_t _mlen, in04_addr& _out)
     {
         char addr[INET_ADDRSTRLEN + 1];
