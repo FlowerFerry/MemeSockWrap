@@ -19,7 +19,7 @@
 #  include <unistd.h>
 #endif
 
-MG_CAPI_INLINE bool mmsw_util__can_bind_ipv6(uint16_t _port)
+MG_CAPI_INLINE bool mmsw_util__can_bind_ipv6(uint16_t _port, int _prot)
 {
 #if MG_OS__WIN_AVAIL
     WSADATA wsaData;
@@ -32,7 +32,14 @@ MG_CAPI_INLINE bool mmsw_util__can_bind_ipv6(uint16_t _port)
         return false;
     }
 
-    sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    if (_prot == IPPROTO_TCP) {
+        sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    } else if (_prot == IPPROTO_UDP) {
+        sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    } else {
+        WSACleanup();
+        return false;
+    }
     if (sock == INVALID_SOCKET) {
         WSACleanup();
         return false;
@@ -60,7 +67,13 @@ MG_CAPI_INLINE bool mmsw_util__can_bind_ipv6(uint16_t _port)
     int ret = -1;
     struct sockaddr_in6 addr;
     int opt = 1;
-    sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+
+    if (_prot == IPPROTO_TCP)
+        sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+    else if (_prot == IPPROTO_UDP)
+        sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    else
+        return false;
     if (sock == -1) {
         return false;
     }
