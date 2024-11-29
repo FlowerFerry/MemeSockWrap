@@ -4,6 +4,7 @@
 
 #include <asio/ip/address.hpp>
 #include <memepp/string.hpp>
+#include <memepp/string_view.hpp>
 
 namespace mmswpp {
 namespace wrap {
@@ -29,10 +30,20 @@ inline ::asio::ip::address_v6 make_address_v6(const memepp::string& _str)
     return addr;
 }
 
+inline ::asio::ip::address_v6 make_address_v6(const memepp::string_view& _str, ::asio::error_code& _ec)
+{
+    return make_address_v6(_str.to_string(), _ec);
+}
+
+inline ::asio::ip::address_v6 make_address_v6(const memepp::string_view& _str)
+{
+    return make_address_v6(_str.to_string());
+}
+
 inline ::asio::ip::address_v4 make_address_v4(const memepp::string& _str, ::asio::error_code& _ec)
 {  
-    auto addr6 = asio::ip::make_address_v6(str, ec);
-    if (!ec) {
+    auto addr6 = asio::ip::make_address_v6(_str, _ec);
+    if (!_ec) {
         if (addr6.is_v4_mapped()) {
             return ::asio::ip::make_address_v4(::asio::ip::v4_mapped, addr6);
         }
@@ -51,6 +62,16 @@ inline ::asio::ip::address_v4 make_address_v4(const memepp::string& _str)
         throw ::asio::system_error(ec);
     }
     return addr;
+}
+
+inline ::asio::ip::address_v4 make_address_v4(const memepp::string_view& _str, ::asio::error_code& _ec)
+{
+    return make_address_v4(_str.to_string(), _ec);
+}
+
+inline ::asio::ip::address_v4 make_address_v4(const memepp::string_view& _str)
+{
+    return make_address_v4(_str.to_string());
 }
 
 } // namespace mmswpp::wrap::asio::ip
