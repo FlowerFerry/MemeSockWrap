@@ -23,16 +23,19 @@
 
 #if MG_HAS_INCLUDE(<mpark/variant.hpp>)
 #include <mpark/variant.hpp>
-#define __MMSWPP_VAR_NSPACE mpark
 #else
 #include <variant>
-#define __MMSWPP_VAR_NSPACE std
 #endif
 
 #include <tuple>
 #include <variant>
 
 namespace mmswpp {
+#if MG_HAS_INCLUDE(<mpark/variant.hpp>)
+    namespace var_ns = mpark;
+#else
+    namespace var_ns = std;
+#endif
 
 struct inet_addr
 {
@@ -57,15 +60,15 @@ struct inet_addr
     using in4_addr = ::in_addr;
     using in6_addr = ::in6_addr;
 
-    using address_storage = __MMSWPP_VAR_NSPACE::variant<
-        __MMSWPP_VAR_NSPACE::monostate, // Invalid address
+    using address_storage = var_ns::variant<
+        var_ns::monostate, // Invalid address
         memepp::string, // String representation
         in4_addr,       // IPv4 address
         in6_addr        // IPv6 address
     >;
 
     inet_addr()
-        : addr_(__MMSWPP_VAR_NSPACE::monostate{})
+        : addr_(var_ns::monostate{})
         , family_(family_type::unspecified)
     {
     }
@@ -130,12 +133,12 @@ struct inet_addr
         {
             switch (storage()) {
             case storage_type::inet4:
-                return __MMSWPP_VAR_NSPACE::get<in4_addr>(addr_).s_addr == __MMSWPP_VAR_NSPACE::get<in4_addr>(_other.addr_).s_addr;
+                return var_ns::get<in4_addr>(addr_).s_addr == var_ns::get<in4_addr>(_other.addr_).s_addr;
             case storage_type::inet6:
-                return memcmp(__MMSWPP_VAR_NSPACE::get<in6_addr>(addr_).s6_addr, __MMSWPP_VAR_NSPACE::get<in6_addr>(_other.addr_).s6_addr, 16) == 0;
+                return memcmp(var_ns::get<in6_addr>(addr_).s6_addr, var_ns::get<in6_addr>(_other.addr_).s6_addr, 16) == 0;
             case storage_type::string:
                 return string_equal(
-                    __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_), family_, __MMSWPP_VAR_NSPACE::get<memepp::string>(_other.addr_), _other.family_);
+                    var_ns::get<memepp::string>(addr_), family_, var_ns::get<memepp::string>(_other.addr_), _other.family_);
             default:
                 return true; // Both are invalid or unspecified
             }
@@ -148,7 +151,7 @@ struct inet_addr
             if (!valid) {
                 return false;
             }
-            return __MMSWPP_VAR_NSPACE::get<in4_addr>(addr_).s_addr == addr4.s_addr;
+            return var_ns::get<in4_addr>(addr_).s_addr == addr4.s_addr;
         } break;
         case storage_type::inet6:
         {
@@ -156,13 +159,13 @@ struct inet_addr
             if (!valid) {
                 return false;
             }
-            return memcmp(__MMSWPP_VAR_NSPACE::get<in6_addr>(addr_).s6_addr, addr6.s6_addr, 16) == 0;
+            return memcmp(var_ns::get<in6_addr>(addr_).s6_addr, addr6.s6_addr, 16) == 0;
         } break;
         case storage_type::string:
         {
             auto str = _other.to_string();
             return string_equal(
-                __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_), family_, str, _other.family_);
+                var_ns::get<memepp::string>(addr_), family_, str, _other.family_);
         } break;
         default:
             return false; // Different storage types
@@ -218,11 +221,11 @@ struct inet_addr
     {
         if (is_ipv4()) {
             if (storage() == storage_type::inet4) {
-                return { __MMSWPP_VAR_NSPACE::get<in4_addr>(addr_), true };
+                return { var_ns::get<in4_addr>(addr_), true };
             }
             if (storage() == storage_type::string) {
                 in4_addr addr;
-                if (inet_pton(AF_INET, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr) == 1) 
+                if (inet_pton(AF_INET, var_ns::get<memepp::string>(addr_).c_str(), &addr) == 1) 
                     return { addr, true };
             }
         }
@@ -230,13 +233,13 @@ struct inet_addr
         if (is_ipv4_mapped()) {
             if (storage() == storage_type::inet6) {
                 in4_addr addr;
-                std::memcpy(&addr, &(__MMSWPP_VAR_NSPACE::get<in6_addr>(addr_).s6_addr[12]), sizeof(in4_addr));
+                std::memcpy(&addr, &(var_ns::get<in6_addr>(addr_).s6_addr[12]), sizeof(in4_addr));
                 return { addr, true };
             }
 
             if (storage() == storage_type::string) {
                 in6_addr addr6;
-                if (inet_pton(AF_INET6, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr6) == 1) 
+                if (inet_pton(AF_INET6, var_ns::get<memepp::string>(addr_).c_str(), &addr6) == 1) 
                 {
                     in4_addr addr4;
                     std::memcpy(&addr4, &(addr6.s6_addr[12]), sizeof(in4_addr));
@@ -254,11 +257,11 @@ struct inet_addr
     {
         if (is_ipv6()) {
             if (storage() == storage_type::inet6) {
-                return { __MMSWPP_VAR_NSPACE::get<in6_addr>(addr_), true };
+                return { var_ns::get<in6_addr>(addr_), true };
             }
             if (storage() == storage_type::string) {
                 in6_addr addr;
-                if (inet_pton(AF_INET6, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr) == 1) 
+                if (inet_pton(AF_INET6, var_ns::get<memepp::string>(addr_).c_str(), &addr) == 1) 
                     return { addr, true };
             }
         }
@@ -302,7 +305,7 @@ struct inet_addr
         case storage_type::inet4:
         {
             char buffer[INET_ADDRSTRLEN + 1];
-            if (inet_ntop(AF_INET, &__MMSWPP_VAR_NSPACE::get<in4_addr>(addr_), buffer, INET_ADDRSTRLEN) == nullptr)
+            if (inet_ntop(AF_INET, &var_ns::get<in4_addr>(addr_), buffer, INET_ADDRSTRLEN) == nullptr)
             {
                 return memepp::string{};
             }
@@ -311,7 +314,7 @@ struct inet_addr
         case storage_type::inet6:
         {
             char buffer[INET6_ADDRSTRLEN + 1];
-            if (inet_ntop(AF_INET6, &__MMSWPP_VAR_NSPACE::get<in6_addr>(addr_), buffer, INET6_ADDRSTRLEN) == nullptr)
+            if (inet_ntop(AF_INET6, &var_ns::get<in6_addr>(addr_), buffer, INET6_ADDRSTRLEN) == nullptr)
             {
                 return memepp::string{};
             }
@@ -319,7 +322,7 @@ struct inet_addr
         }
         case storage_type::string:
         {
-            return __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_);
+            return var_ns::get<memepp::string>(addr_);
         }
         default: {
             return memepp::string{};
@@ -329,17 +332,17 @@ struct inet_addr
 
     const in4_addr* get_in4_addr_ptr() const noexcept
     {
-        return __MMSWPP_VAR_NSPACE::get_if<in4_addr>(&addr_);
+        return var_ns::get_if<in4_addr>(&addr_);
     }
 
     const in6_addr* get_in6_addr_ptr() const noexcept
     {
-        return __MMSWPP_VAR_NSPACE::get_if<in6_addr>(&addr_);
+        return var_ns::get_if<in6_addr>(&addr_);
     }
 
     const memepp::string* get_str_ptr() const noexcept
     {
-        return __MMSWPP_VAR_NSPACE::get_if<memepp::string>(&addr_);
+        return var_ns::get_if<memepp::string>(&addr_);
     }
 
     void assign(const in4_addr& _addr)
@@ -363,7 +366,7 @@ struct inet_addr
     void assign(const memepp::string& _str)
     {
         addr_   = _str.trim_space();
-        family_ = identify_family(__MMSWPP_VAR_NSPACE::get<memepp::string>(addr_));
+        family_ = identify_family(var_ns::get<memepp::string>(addr_));
     }
 
     bool convert(storage_type _to_storage)
@@ -380,7 +383,7 @@ struct inet_addr
                 family() == family_type::ipv4_mapped)
             {
                 in4_addr addr;
-                std::memcpy(&addr, &(__MMSWPP_VAR_NSPACE::get<in6_addr>(addr_).s6_addr[12]), sizeof(in4_addr));
+                std::memcpy(&addr, &(var_ns::get<in6_addr>(addr_).s6_addr[12]), sizeof(in4_addr));
                 addr_ = addr;
                 family_ = family_type::ipv4;
                 return true;
@@ -391,7 +394,7 @@ struct inet_addr
                 if (family() == family_type::ipv4)
                 {
                     in4_addr addr;
-                    if (inet_pton(AF_INET, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr) != 1)
+                    if (inet_pton(AF_INET, var_ns::get<memepp::string>(addr_).c_str(), &addr) != 1)
                     {
                         return false;
                     }
@@ -403,7 +406,7 @@ struct inet_addr
                 if (family() == family_type::ipv4_mapped)
                 {
                     in6_addr addr6;
-                    if (inet_pton(AF_INET6, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr6) != 1)
+                    if (inet_pton(AF_INET6, var_ns::get<memepp::string>(addr_).c_str(), &addr6) != 1)
                     {
                         return false;
                     }
@@ -421,7 +424,7 @@ struct inet_addr
         {
             if (storage() == storage_type::inet4)
             {
-                addr_   = make_ipv4_mapped(__MMSWPP_VAR_NSPACE::get<in4_addr>(addr_));
+                addr_   = make_ipv4_mapped(var_ns::get<in4_addr>(addr_));
                 family_ = family_type::ipv4_mapped;
                 return true;
             }
@@ -431,7 +434,7 @@ struct inet_addr
                 if (family() == family_type::ipv6)
                 {
                     in6_addr addr;
-                    if (inet_pton(AF_INET6, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr) != 1)
+                    if (inet_pton(AF_INET6, var_ns::get<memepp::string>(addr_).c_str(), &addr) != 1)
                     {
                         return false;
                     }
@@ -443,7 +446,7 @@ struct inet_addr
                 if (family() == family_type::ipv4_mapped)
                 {
                     in4_addr addr4;
-                    if (inet_pton(AF_INET, __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_).c_str(), &addr4) != 1)
+                    if (inet_pton(AF_INET, var_ns::get<memepp::string>(addr_).c_str(), &addr4) != 1)
                     {
                         return false;
                     }
@@ -473,7 +476,7 @@ struct inet_addr
         if (!is_domain())
             return;
 
-        auto& str = __MMSWPP_VAR_NSPACE::get<memepp::string>(addr_);
+        auto& str = var_ns::get<memepp::string>(addr_);
         str.split(".", _out);
     }
 
@@ -590,6 +593,5 @@ private:
 
 } // namespace mmswpp
 
-#undef __MMSWPP_VAR_NSPACE
 
 #endif // !MMSWPP_INET_ADDR_H_INCLUDED
