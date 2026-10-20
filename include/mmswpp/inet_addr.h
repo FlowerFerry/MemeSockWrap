@@ -28,7 +28,6 @@
 #endif
 
 #include <tuple>
-#include <variant>
 
 namespace mmswpp {
 #if MG_HAS_INCLUDE(<mpark/variant.hpp>)
